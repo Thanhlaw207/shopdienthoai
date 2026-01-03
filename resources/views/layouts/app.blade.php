@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ config('app.name', 'Laravel Admin') }}</title>
+    <title>{{ config('app.name', 'Admin Nhóm 4') }}</title>
 
     <link rel="dns-prefetch" href="//fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=Nunito" rel="stylesheet">
@@ -14,91 +14,106 @@
     @vite(['resources/sass/app.scss', 'resources/js/app.js'])
 
     <style>
-        body { overflow-x: hidden; }
-        /* Sidebar Styling */
+        body { overflow-x: hidden; background-color: #f8f9fa; }
         .wrapper { display: flex; width: 100%; align-items: stretch; }
+        
+        /* Sidebar Styling */
         #sidebar {
-            min-width: 250px;
-            max-width: 250px;
+            min-width: 260px;
+            max-width: 260px;
             min-height: 100vh;
-            background: #343a40; /* Màu tối như hình mẫu */
+            background: #212529; /* Màu tối chuyên nghiệp */
             color: #fff;
             transition: all 0.3s;
+            box-shadow: 4px 0 10px rgba(0,0,0,0.1);
         }
-        #sidebar .sidebar-header { padding: 20px; background: #2c3136; border-bottom: 1px solid #474d52; }
-        #sidebar ul p { color: #fff; padding: 10px; }
+        #sidebar .sidebar-header { 
+            padding: 25px 20px; 
+            background: #1a1d20; 
+            border-bottom: 1px solid #343a40; 
+            text-align: center;
+        }
+        #sidebar .sidebar-header h3 { font-size: 1.2rem; font-weight: 800; margin: 0; letter-spacing: 1px; }
+        
         #sidebar ul li a {
-            padding: 15px 20px;
+            padding: 15px 25px;
             display: block;
-            color: #adb5bd;
+            color: #ced4da;
             text-decoration: none;
             transition: 0.3s;
+            font-size: 0.95rem;
         }
-        #sidebar ul li a:hover { color: #fff; background: rgba(255,255,255,0.1); }
-        #sidebar ul li a i { margin-right: 10px; width: 20px; }
+        #sidebar ul li a:hover, #sidebar ul li.active > a { 
+            color: #fff; 
+            background: #343a40; 
+            border-left: 4px solid #ffc107; /* Vạch vàng làm điểm nhấn */
+        }
+        #sidebar ul li a i { margin-right: 12px; width: 20px; text-align: center; }
         
+        .sidebar-heading {
+            padding: 20px 25px 10px;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            font-weight: 700;
+            color: #6c757d;
+        }
+
         /* Content Styling */
         #content { width: 100%; }
-        .navbar { margin-bottom: 0; }
+        .navbar { border-bottom: 1px solid #e3e6f0 !important; }
     </style>
 </head>
 <body>
     <div id="app" class="wrapper">
         <nav id="sidebar">
             <div class="sidebar-header">
-                <h3>NHÓM 4</h3>
+                <h3><i class="fas fa-user-shield me-2"></i>ADMIN NHÓM 4</h3>
             </div>
 
             <ul class="list-unstyled components">
-                <li>
-                    <a href="#"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+                <div class="sidebar-heading">Bảng điều khiển</div>
+                <li class="{{ Request::is('products') ? 'active' : '' }}">
+                    <a href="{{ route('products.index') }}"><i class="fas fa-home"></i> Dashboard</a>
                 </li>
-                <li class="{{ Request::is('products*') ? 'active' : '' }}">
+
+                <div class="sidebar-heading">Cửa hàng</div>
+                <li class="{{ Request::is('products*') && !Request::is('products') ? 'active' : '' }}">
                     <a href="{{ route('products.index') }}"><i class="fas fa-mobile-alt"></i> Quản lý điện thoại</a>
                 </li>
+                
+                <hr style="border-color: #343a40; margin: 20px 0;">
+                
+                <div class="sidebar-heading">Giao diện khách</div>
                 <li>
-                    <a href="#"><i class="fas fa-table"></i> Data Tables</a>
-                </li>
-                <li>
-                    <a href="#"><i class="fas fa-envelope"></i> Mail</a>
-                </li>
-                <li>
-                    <a href="#"><i class="fas fa-chart-line"></i> Charts</a>
-                </li>
-                <li>
-                    <a href="#"><i class="fas fa-map-marker-alt"></i> Maps</a>
-                </li>
-                <hr style="border-color: #474d52;">
-                <li>
-                    <a href="{{ route('login') }}"><i class="fas fa-sign-in-alt"></i> Login Page</a>
+                    <a href="/shop" class="text-warning fw-bold">
+                        <i class="fas fa-shopping-bag"></i> Xem trang Shop
+                    </a>
                 </li>
             </ul>
         </nav>
 
         <div id="content">
-            <nav class="navbar navbar-expand-md navbar-light bg-white shadow-sm">
+            <nav class="navbar navbar-expand-md navbar-light bg-white shadow-sm py-3">
                 <div class="container-fluid">
-                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent">
-                        <span class="navbar-toggler-icon"></span>
-                    </button>
+                    <span class="navbar-text text-muted d-none d-md-block">
+                        Chào mừng bạn quay lại, quản trị viên!
+                    </span>
 
                     <div class="collapse navbar-collapse" id="navbarSupportedContent">
                         <ul class="navbar-nav ms-auto">
                             @guest
                                 @if (Route::has('login'))
-                                    <li class="nav-item"><a class="nav-link" href="{{ route('login') }}">{{ __('Login') }}</a></li>
-                                @endif
-                                @if (Route::has('register'))
-                                    <li class="nav-item"><a class="nav-link" href="{{ route('register') }}">{{ __('Register') }}</a></li>
+                                    <li class="nav-item"><a class="nav-link" href="{{ route('login') }}">Đăng nhập</a></li>
                                 @endif
                             @else
                                 <li class="nav-item dropdown">
-                                    <a id="navbarDropdown" class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                                        {{ Auth::user()->name }}
+                                    <a id="navbarDropdown" class="nav-link dropdown-toggle fw-bold" href="#" role="button" data-bs-toggle="dropdown">
+                                        <i class="fas fa-user-circle me-1"></i> {{ Auth::user()->name }}
                                     </a>
-                                    <div class="dropdown-menu dropdown-menu-end">
-                                        <a class="dropdown-item" href="{{ route('logout') }}" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
-                                            {{ __('Logout') }}
+                                    <div class="dropdown-menu dropdown-menu-end shadow border-0">
+                                        <a class="dropdown-item py-2" href="{{ route('logout') }}" 
+                                           onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+                                            <i class="fas fa-sign-out-alt me-2 text-danger"></i> Đăng xuất
                                         </a>
                                         <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">@csrf</form>
                                     </div>
@@ -109,7 +124,7 @@
                 </div>
             </nav>
 
-            <main class="py-4 px-3">
+            <main class="py-4 px-4">
                 @yield('content')
             </main>
         </div>

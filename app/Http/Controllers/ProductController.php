@@ -8,79 +8,74 @@ use Illuminate\Http\Request;
 class ProductController extends Controller
 {
     /**
-     * Hiển thị danh sách sản phẩm (Trang Index)
+     * TRANG NGƯỜI DÙNG: Hiển thị sản phẩm cho khách hàng (Shop)
      */
-    public function index()
+    public function userIndex()
     {
-        $products = Product::all(); // Lấy tất cả sản phẩm từ DB
-        return view('products.index', compact('products'));
+        $products = Product::all();
+
+        // Phân loại sản phẩm để trang Shop hiển thị theo từng dòng máy
+        $categories = [
+            'iPhone' => $products->filter(fn($p) => $p->category == 'iPhone'),
+            'Samsung' => $products->filter(fn($p) => $p->category == 'Samsung'),
+            'Dòng máy khác' => $products->filter(fn($p) => !in_array($p->category, ['iPhone', 'Samsung'])),
+        ];
+
+        return view('user_shop', compact('categories'));
     }
 
     /**
-     * Hiển thị form thêm sản phẩm mới
+     * TRANG ADMIN: Danh sách quản lý
      */
+    public function index()
+    {
+        $products = Product::all();
+        return view('products.index', compact('products'));
+    }
+
     public function create()
     {
         return view('products.create');
     }
 
     /**
-     * Lưu sản phẩm mới vào DB
+     * Lưu sản phẩm mới (Có thêm category)
      */
     public function store(Request $request)
     {
-        // Kiểm tra dữ liệu đầu vào (Validation) để tránh lỗi
-        $request->validate([
-            'name' => 'required',
-            'price' => 'required|numeric',
-            'quantity' => 'required|integer',
-        ]);
         $request->validate([
             'name' => 'required|max:255',
+            'category' => 'required', // Bắt buộc chọn dòng máy
             'price' => 'required|numeric|min:0',
             'quantity' => 'required|integer|min:0',
         ], [
             'name.required' => 'Vui lòng nhập tên điện thoại',
+            'category.required' => 'Vui lòng chọn hãng sản xuất',
             'price.numeric' => 'Giá bán phải là con số',
-]);
-        Product::create($request->all()); // Lưu dữ liệu
+        ]);
+
+        Product::create($request->all());
         return redirect()->route('products.index')->with('success', 'Đã thêm điện thoại mới thành công!');
     }
 
-    /**
-     * Hiển thị chi tiết sản phẩm (không bắt buộc cho demo)
-     */
-    public function show(Product $product)
-    {
-        return view('products.show', compact('product'));
-    }
-
-    /**
-     * Hiển thị form chỉnh sửa sản phẩm
-     */
     public function edit(Product $product)
     {
         return view('products.edit', compact('product'));
     }
 
-    /**
-     * Cập nhật thông tin sản phẩm vào DB
-     */
     public function update(Request $request, Product $product)
     {
         $request->validate([
-            'name' => 'required',
-            'price' => 'required|numeric',
-            'quantity' => 'required|integer',
+            'name' => 'required|max:255',
+            'category' => 'required',
+            'price' => 'required|numeric|min:0',
+            'quantity' => 'required|integer|min:0',
         ]);
 
         $product->update($request->all());
         return redirect()->route('products.index')->with('success', 'Cập nhật thành công!');
     }
 
-    /**
-     * Xóa sản phẩm
-     */
     public function destroy(Product $product)
     {
         $product->delete();
