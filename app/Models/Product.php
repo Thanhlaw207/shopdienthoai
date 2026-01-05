@@ -9,12 +9,16 @@ class Product extends Model
 {
     use HasFactory;
 
-    // Cho phép lưu dữ liệu vào các cột này
+    // Danh sách các cột được phép lưu vào database
     protected $fillable = [
         'name', 
-        'image', 
+        'brand', 
         'price', 
         'quantity', 
-        'description'
+        'image', 
+        'description',
+        'ram',      // Thêm cột này
+        'storage',  // Thêm cột này
+        'color'     // Thêm cột này
     ];
 }

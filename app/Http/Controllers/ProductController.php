@@ -14,11 +14,11 @@ class ProductController extends Controller
     {
         $products = Product::all();
 
-        // Phân loại sản phẩm để trang Shop hiển thị theo từng dòng máy
+        // Đồng bộ: Đổi 'category' thành 'brand' theo database của bạn
         $categories = [
-            'iPhone' => $products->filter(fn($p) => $p->category == 'iPhone'),
-            'Samsung' => $products->filter(fn($p) => $p->category == 'Samsung'),
-            'Dòng máy khác' => $products->filter(fn($p) => !in_array($p->category, ['iPhone', 'Samsung'])),
+            'iPhone' => $products->filter(fn($p) => $p->brand == 'iPhone'),
+            'Samsung' => $products->filter(fn($p) => $p->brand == 'Samsung'),
+            'Dòng máy khác' => $products->filter(fn($p) => !in_array($p->brand, ['iPhone', 'Samsung'])),
         ];
 
         return view('user_shop', compact('categories'));
@@ -39,22 +39,33 @@ class ProductController extends Controller
     }
 
     /**
-     * Lưu sản phẩm mới (Có thêm category)
+     * Lưu sản phẩm mới (Sửa tên các trường cho chi tiết hơn)
      */
     public function store(Request $request)
     {
         $request->validate([
             'name' => 'required|max:255',
-            'category' => 'required', // Bắt buộc chọn dòng máy
+            'brand' => 'required', // Đã đổi từ category sang brand
             'price' => 'required|numeric|min:0',
             'quantity' => 'required|integer|min:0',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048', // Validation ảnh
         ], [
             'name.required' => 'Vui lòng nhập tên điện thoại',
-            'category.required' => 'Vui lòng chọn hãng sản xuất',
+            'brand.required' => 'Vui lòng chọn hãng sản xuất',
             'price.numeric' => 'Giá bán phải là con số',
         ]);
 
-        Product::create($request->all());
+        $data = $request->all();
+
+        // Xử lý upload ảnh nếu có
+        if ($request->hasFile('image')) {
+            $fileName = time() . '_' . $request->image->getClientOriginalName();
+            $request->image->move(public_path('uploads/products'), $fileName);
+            $data['image'] = 'uploads/products/' . $fileName;
+        }
+
+        Product::create($data);
+        
         return redirect()->route('products.index')->with('success', 'Đã thêm điện thoại mới thành công!');
     }
 
@@ -63,18 +74,31 @@ class ProductController extends Controller
         return view('products.edit', compact('product'));
     }
 
-    public function update(Request $request, Product $product)
-    {
-        $request->validate([
-            'name' => 'required|max:255',
-            'category' => 'required',
-            'price' => 'required|numeric|min:0',
-            'quantity' => 'required|integer|min:0',
-        ]);
+    /**
+     * Cập nhật sản phẩm (Cũng phải đổi category -> brand)
+     */
+public function update(Request $request, Product $product)
+{
+    $request->validate([
+        'name' => 'required',
+        'brand' => 'required',
+        'price' => 'required|numeric',
+        'quantity' => 'required|integer',
+    ]);
 
-        $product->update($request->all());
-        return redirect()->route('products.index')->with('success', 'Cập nhật thành công!');
+    $data = $request->all();
+
+    if ($request->hasFile('image')) {
+        // Lưu ảnh mới
+        $fileName = time() . '.' . $request->image->extension();
+        $request->image->move(public_path('uploads/products'), $fileName);
+        $data['image'] = 'uploads/products/' . $fileName;
     }
+
+    $product->update($data); // Cập nhật vào DB
+
+    return redirect()->route('products.index')->with('success', 'Đã cập nhật thông tin máy!');
+}
 
     public function destroy(Product $product)
     {
