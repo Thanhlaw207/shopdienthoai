@@ -4,69 +4,109 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use Illuminate\Foundation\Auth\RegistersUsers;
+use App\Notifications\SendOTPNotification;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Auth;
 
 class RegisterController extends Controller
 {
-    /*
-    |--------------------------------------------------------------------------
-    | Register Controller
-    |--------------------------------------------------------------------------
-    |
-    | This controller handles the registration of new users as well as their
-    | validation and creation. By default this controller uses a trait to
-    | provide this functionality without requiring any additional code.
-    |
-    */
-
-    use RegistersUsers;
-
-    /**
-     * Where to redirect users after registration.
-     *
-     * @var string
-     */
-    protected $redirectTo = '/home';
-
-    /**
-     * Create a new controller instance.
-     *
-     * @return void
-     */
     public function __construct()
     {
         $this->middleware('guest');
     }
 
-    /**
-     * Get a validator for an incoming registration request.
-     *
-     * @param  array  $data
-     * @return \Illuminate\Contracts\Validation\Validator
-     */
+    // ===== FORM REGISTER =====
+    public function showRegisterForm()
+    {
+        return view('auth.register');
+    }
+
+    // ===== HANDLE REGISTER =====
+    public function register(Request $request)
+    {
+        $this->validator($request->all())->validate();
+
+        // Tạo user (chưa xác thực email)
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+        ]);
+
+        // Sinh OTP
+        $otp = rand(100000, 999999);
+
+        // Lưu session OTP
+        session([
+            'register_otp' => $otp,
+            'register_email' => $user->email,
+            'register_otp_expires_at' => now()->addMinutes(5),
+        ]);
+
+        // Gửi OTP
+        $user->notify(new SendOTPNotification($otp));
+
+        return redirect()->route('otp.view')
+            ->with('message', 'Mã OTP đã được gửi về email của bạn.');
+    }
+
+    // ===== FORM NHẬP OTP =====
+    public function showVerifyOtpForm()
+    {
+        if (!session('register_email')) {
+            return redirect()->route('register');
+        }
+
+        return view('auth.verify-otp');
+    }
+
+    // ===== VERIFY OTP =====
+    public function verifyOtp(Request $request)
+    {
+        $request->validate([
+            'otp' => 'required|digits:6',
+        ]);
+
+        // Hết hạn
+        if (now()->greaterThan(session('register_otp_expires_at'))) {
+            return back()->withErrors(['otp' => 'Mã OTP đã hết hạn.']);
+        }
+
+        // Sai OTP
+        if ($request->otp != session('register_otp')) {
+            return back()->withErrors(['otp' => 'Mã OTP không chính xác.']);
+        }
+
+        // Đúng OTP
+        $user = User::where('email', session('register_email'))->first();
+
+        if (!$user) {
+            return redirect()->route('register');
+        }
+
+        $user->email_verified_at = now();
+        $user->save();
+
+        Auth::login($user);
+
+        session()->forget([
+            'register_otp',
+            'register_email',
+            'register_otp_expires_at',
+        ]);
+
+        return redirect('/home')->with('success', 'Xác thực thành công 🎉');
+    }
+
+    // ===== VALIDATOR =====
     protected function validator(array $data)
     {
         return Validator::make($data, [
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
-        ]);
-    }
-
-    /**
-     * Create a new user instance after a valid registration.
-     *
-     * @param  array  $data
-     * @return \App\Models\User
-     */
-    protected function create(array $data)
-    {
-        return User::create([
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'password' => Hash::make($data['password']),
+            'email' => ['required', 'email', 'unique:users'],
+            'password' => ['required', 'min:8', 'confirmed'],
         ]);
     }
 }

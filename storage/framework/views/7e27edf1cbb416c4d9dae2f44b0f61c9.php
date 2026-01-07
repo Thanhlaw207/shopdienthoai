@@ -1,17 +1,17 @@
 <!doctype html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="<?php echo e(str_replace('_', '-', app()->getLocale())); ?>">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="csrf-token" content="<?php echo e(csrf_token()); ?>">
 
-    <title>{{ config('app.name', 'Admin Nhóm 4') }}</title>
+    <title><?php echo e(config('app.name', 'Admin Nhóm 4')); ?></title>
 
     <link rel="dns-prefetch" href="//fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=Nunito" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 
-    @vite(['resources/sass/app.scss', 'resources/js/app.js'])
+    <?php echo app('Illuminate\Foundation\Vite')(['resources/sass/app.scss', 'resources/js/app.js']); ?>
 
     <style>
         body { overflow-x: hidden; background-color: #f8f9fa; }
@@ -72,13 +72,13 @@
 
             <ul class="list-unstyled components">
                 <div class="sidebar-heading">Bảng điều khiển</div>
-                <li class="{{ Request::is('products') ? 'active' : '' }}">
-                    <a href="{{ route('products.index') }}"><i class="fas fa-home"></i> Dashboard</a>
+                <li class="<?php echo e(Request::is('products') ? 'active' : ''); ?>">
+                    <a href="<?php echo e(route('products.index')); ?>"><i class="fas fa-home"></i> Dashboard</a>
                 </li>
 
                 <div class="sidebar-heading">Cửa hàng</div>
-                <li class="{{ Request::is('products*') && !Request::is('products') ? 'active' : '' }}">
-                    <a href="{{ route('products.index') }}"><i class="fas fa-mobile-alt"></i> Quản lý điện thoại</a>
+                <li class="<?php echo e(Request::is('products*') && !Request::is('products') ? 'active' : ''); ?>">
+                    <a href="<?php echo e(route('products.index')); ?>"><i class="fas fa-mobile-alt"></i> Quản lý điện thoại</a>
                 </li>
                 
                 <hr style="border-color: #343a40; margin: 20px 0;">
@@ -101,35 +101,36 @@
 
                     <div class="collapse navbar-collapse" id="navbarSupportedContent">
                         <ul class="navbar-nav ms-auto">
-                            @guest
-                                @if (Route::has('login'))
-                                    <li class="nav-item"><a class="nav-link" href="{{ route('login') }}">Đăng nhập</a></li>
-                                @endif
-                            @else
+                            <?php if(auth()->guard()->guest()): ?>
+                                <?php if(Route::has('login')): ?>
+                                    <li class="nav-item"><a class="nav-link" href="<?php echo e(route('login')); ?>">Đăng nhập</a></li>
+                                <?php endif; ?>
+                            <?php else: ?>
                                 <li class="nav-item dropdown">
                                     <a id="navbarDropdown" class="nav-link dropdown-toggle fw-bold" href="#" role="button" data-bs-toggle="dropdown">
-                                        <i class="fas fa-user-circle me-1"></i> {{ Auth::user()->name }}
+                                        <i class="fas fa-user-circle me-1"></i> <?php echo e(Auth::user()->name); ?>
+
                                     </a>
                                     <div class="dropdown-menu dropdown-menu-end shadow border-0">
                                         <a class="dropdown-item py-2" href="#"
                                             onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
                                             <i class="fas fa-sign-out-alt me-2 text-danger"></i> Đăng xuất
                                         </a>
-                                        <form id="logout-form" action="{{ url('/logout') }}" method="POST" class="d-none">
-                                            @csrf
+                                        <form id="logout-form" action="<?php echo e(url('/logout')); ?>" method="POST" class="d-none">
+                                            <?php echo csrf_field(); ?>
                                         </form>
                                     </div>
                                 </li>
-                            @endguest
+                            <?php endif; ?>
                         </ul>
                     </div>
                 </div>
             </nav>
 
             <main class="py-4 px-4">
-                @yield('content')
+                <?php echo $__env->yieldContent('content'); ?>
             </main>
         </div>
     </div>
 </body>
-</html>
+</html><?php /**PATH C:\xampp\htdocs\Nhom4_CongNgheMoi\resources\views/layouts/app.blade.php ENDPATH**/ ?>
