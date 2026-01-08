@@ -9,9 +9,13 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
+use Carbon\Carbon;
 
 class RegisterController extends Controller
 {
+    // Thời gian chờ resend (giây)
+    private const OTP_RESEND_SECONDS = 10;
+
     public function __construct()
     {
         $this->middleware('guest');
@@ -35,21 +39,11 @@ class RegisterController extends Controller
             'password' => Hash::make($request->password),
         ]);
 
-        // Sinh OTP
-        $otp = rand(100000, 999999);
-
-        // Lưu session OTP
-        session([
-            'register_otp' => $otp,
-            'register_email' => $user->email,
-            'register_otp_expires_at' => now()->addMinutes(5),
-        ]);
-
-        // Gửi OTP
-        $user->notify(new SendOTPNotification($otp));
+        $this->sendOtp($user);
 
         return redirect()->route('otp.view')
             ->with('message', 'Mã OTP đã được gửi về email của bạn.');
+
     }
 
     // ===== FORM NHẬP OTP =====
@@ -59,7 +53,9 @@ class RegisterController extends Controller
             return redirect()->route('register');
         }
 
-        return view('auth.verify-otp');
+        return view('auth.verify-otp', [
+            'resendSeconds' => self::OTP_RESEND_SECONDS
+        ]);
     }
 
     // ===== VERIFY OTP =====
@@ -69,17 +65,14 @@ class RegisterController extends Controller
             'otp' => 'required|digits:6',
         ]);
 
-        // Hết hạn
         if (now()->greaterThan(session('register_otp_expires_at'))) {
             return back()->withErrors(['otp' => 'Mã OTP đã hết hạn.']);
         }
 
-        // Sai OTP
         if ($request->otp != session('register_otp')) {
             return back()->withErrors(['otp' => 'Mã OTP không chính xác.']);
         }
 
-        // Đúng OTP
         $user = User::where('email', session('register_email'))->first();
 
         if (!$user) {
@@ -95,9 +88,48 @@ class RegisterController extends Controller
             'register_otp',
             'register_email',
             'register_otp_expires_at',
+            'register_otp_sent_at',
         ]);
 
         return redirect('/home')->with('success', 'Xác thực thành công 🎉');
+    }
+
+    // ===== RESEND OTP (CHỐNG SPAM) =====
+    public function resendOtp()
+    {
+        if (!session('register_email') || !session('register_otp_sent_at')) {
+            return redirect()->route('register');
+        }
+
+        $lastSent = \Carbon\Carbon::parse(session('register_otp_sent_at'));
+        $diff = now()->diffInSeconds($lastSent);
+
+        if ($diff < self::OTP_RESEND_SECONDS) {
+            $remain = self::OTP_RESEND_SECONDS - $diff;
+            return back()->withErrors(['otp' => "Vui lòng chờ {$remain} giây trước khi gửi lại OTP."]);
+        }
+
+        $user = \App\Models\User::where('email', session('register_email'))->first();
+        if (!$user)
+            return redirect()->route('register');
+
+        $this->sendOtp($user);
+
+        return back()->with('message', 'Đã gửi lại mã OTP mới.');
+    }
+    // ===== HÀM GỬI OTP (DÙNG CHUNG) =====
+    private function sendOtp(User $user)
+    {
+        $otp = rand(100000, 999999);
+
+        session([
+            'register_otp' => $otp,
+            'register_email' => $user->email,
+            'register_otp_expires_at' => now()->addMinutes(5),
+            'register_otp_sent_at' => now(),
+        ]);
+
+        $user->notify(new SendOTPNotification($otp));
     }
 
     // ===== VALIDATOR =====

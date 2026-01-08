@@ -17,10 +17,13 @@ use App\Http\Controllers\Auth\LoginController;
 Route::get('/', function () {
     return auth()->check()
         ? redirect()->route('home')
-        : view('auth.landing');
+        : redirect()->route('landing');
 });
-// ================= AUTH =================
 
+// ================= AUTH =================
+Route::get('/landing', function () {
+    return view('auth.landing');
+})->name('landing');
 // ---------- LOGIN ----------
 Route::get('/login', [LoginController::class, 'showLoginForm'])
     ->middleware('guest')
@@ -45,6 +48,11 @@ Route::get('/verify-otp', [RegisterController::class, 'showVerifyOtpForm'])
 Route::post('/verify-otp', [RegisterController::class, 'verifyOtp'])
     ->middleware('guest')
     ->name('otp.verify');
+
+// ✅ RESEND OTP (CHỐNG SPAM)
+Route::post('/resend-otp', [RegisterController::class, 'resendOtp'])
+    ->middleware('guest')
+    ->name('otp.resend');
 
 // ---------- LOGOUT (CHỈ POST) ----------
 Route::post('/logout', [LoginController::class, 'logout'])
