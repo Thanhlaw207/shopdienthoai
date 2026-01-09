@@ -13,6 +13,8 @@
 
     @vite(['resources/sass/app.scss', 'resources/js/app.js'])
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <style>
         body { overflow-x: hidden; background-color: #f8f9fa; }
         .wrapper { display: flex; width: 100%; align-items: stretch; }
@@ -22,7 +24,7 @@
             min-width: 260px;
             max-width: 260px;
             min-height: 100vh;
-            background: #212529; /* Màu tối chuyên nghiệp */
+            background: #212529; 
             color: #fff;
             transition: all 0.3s;
             box-shadow: 4px 0 10px rgba(0,0,0,0.1);
@@ -46,7 +48,7 @@
         #sidebar ul li a:hover, #sidebar ul li.active > a { 
             color: #fff; 
             background: #343a40; 
-            border-left: 4px solid #ffc107; /* Vạch vàng làm điểm nhấn */
+            border-left: 4px solid #ffc107; 
         }
         #sidebar ul li a i { margin-right: 12px; width: 20px; text-align: center; }
         
@@ -77,8 +79,14 @@
                 </li>
 
                 <div class="sidebar-heading">Cửa hàng</div>
-                <li class="{{ Request::is('products*') && !Request::is('products') ? 'active' : '' }}">
+                <li class="{{ Request::is('products*') && !Request::is('products') && !Request::is('products/thong-ke') ? 'active' : '' }}">
                     <a href="{{ route('products.index') }}"><i class="fas fa-mobile-alt"></i> Quản lý điện thoại</a>
+                </li>
+
+                <li class="{{ Request::is('products/thong-ke') ? 'active' : '' }}">
+                    <a href="/products/thong-ke">
+                        <i class="fas fa-chart-pie"></i> Biểu đồ thống kê
+                    </a>
                 </li>
                 
                 <hr style="border-color: #343a40; margin: 20px 0;">

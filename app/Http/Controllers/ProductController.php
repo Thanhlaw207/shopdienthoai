@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB; // Thêm dòng này để dùng DB::raw
 
 class ProductController extends Controller
 {
@@ -14,7 +15,7 @@ class ProductController extends Controller
     {
         $products = Product::all();
 
-        // Đồng bộ: Đổi 'category' thành 'brand' theo database của bạn
+        // Đồng bộ dữ liệu dựa trên cột 'brand'
         $categories = [
             'iPhone' => $products->filter(fn($p) => $p->brand == 'iPhone'),
             'Samsung' => $products->filter(fn($p) => $p->brand == 'Samsung'),
@@ -39,16 +40,16 @@ class ProductController extends Controller
     }
 
     /**
-     * Lưu sản phẩm mới (Sửa tên các trường cho chi tiết hơn)
+     * Lưu sản phẩm mới
      */
     public function store(Request $request)
     {
         $request->validate([
             'name' => 'required|max:255',
-            'brand' => 'required', // Đã đổi từ category sang brand
+            'brand' => 'required', 
             'price' => 'required|numeric|min:0',
             'quantity' => 'required|integer|min:0',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048', // Validation ảnh
+            'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ], [
             'name.required' => 'Vui lòng nhập tên điện thoại',
             'brand.required' => 'Vui lòng chọn hãng sản xuất',
@@ -57,7 +58,6 @@ class ProductController extends Controller
 
         $data = $request->all();
 
-        // Xử lý upload ảnh nếu có
         if ($request->hasFile('image')) {
             $fileName = time() . '_' . $request->image->getClientOriginalName();
             $request->image->move(public_path('uploads/products'), $fileName);
@@ -75,34 +75,60 @@ class ProductController extends Controller
     }
 
     /**
-     * Cập nhật sản phẩm (Cũng phải đổi category -> brand)
+     * Cập nhật sản phẩm
      */
-public function update(Request $request, Product $product)
-{
-    $request->validate([
-        'name' => 'required',
-        'brand' => 'required',
-        'price' => 'required|numeric',
-        'quantity' => 'required|integer',
-    ]);
+    public function update(Request $request, Product $product)
+    {
+        $request->validate([
+            'name' => 'required',
+            'brand' => 'required',
+            'price' => 'required|numeric',
+            'quantity' => 'required|integer',
+        ]);
 
-    $data = $request->all();
+        $data = $request->all();
 
-    if ($request->hasFile('image')) {
-        // Lưu ảnh mới
-        $fileName = time() . '.' . $request->image->extension();
-        $request->image->move(public_path('uploads/products'), $fileName);
-        $data['image'] = 'uploads/products/' . $fileName;
+        if ($request->hasFile('image')) {
+            $fileName = time() . '.' . $request->image->extension();
+            $request->image->move(public_path('uploads/products'), $fileName);
+            $data['image'] = 'uploads/products/' . $fileName;
+        }
+
+        $product->update($data);
+
+        return redirect()->route('products.index')->with('success', 'Đã cập nhật thông tin máy!');
     }
-
-    $product->update($data); // Cập nhật vào DB
-
-    return redirect()->route('products.index')->with('success', 'Đã cập nhật thông tin máy!');
-}
 
     public function destroy(Product $product)
     {
         $product->delete();
         return redirect()->route('products.index')->with('success', 'Đã xóa sản phẩm!');
     }
+
+    /**
+     * TRANG THỐNG KÊ: Lấy dữ liệu thực cho biểu đồ
+     */
+    public function thongKe() 
+{
+    // 1. Thống kê số lượng máy theo hãng
+    $dataQuantity = Product::select('brand', \DB::raw('count(*) as total'))
+                    ->groupBy('brand')
+                    ->get();
+
+    // 2. Thống kê doanh thu dự kiến theo từng hãng
+    $dataRevenue = Product::select('brand', \DB::raw('SUM(price * quantity) as total_revenue'))
+                    ->groupBy('brand')
+                    ->get();
+
+    // 3. TÍNH TỔNG TẤT CẢ DOANH THU (Số tiền nhận lại khi bán hết sạch hàng)
+    $totalAllRevenue = Product::sum(\DB::raw('price * quantity'));
+
+    return view('products.thongke', [
+        'labels' => $dataQuantity->pluck('brand')->toArray(),
+        'values' => $dataQuantity->pluck('total')->toArray(),
+        'revLabels' => $dataRevenue->pluck('brand')->toArray(),
+        'revValues' => $dataRevenue->pluck('total_revenue')->toArray(),
+        'totalAllRevenue' => $totalAllRevenue, // Gửi biến này sang View
+    ]);
+}
 }
