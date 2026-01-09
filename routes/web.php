@@ -5,7 +5,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\LoginController;
-
+use App\Models\Product;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -54,4 +54,13 @@ Route::middleware(['auth'])->group(function () {
     // ---------- PRODUCTS ----------
     Route::resource('products', ProductController::class);
     
+
+    Route::get('/shop', function () {
+    // 1. Lấy tất cả sản phẩm trong database và nhóm lại theo cột 'brand' (hãng)
+    // Chính dòng này sẽ tạo ra biến $categories mà giao diện đang đòi hỏi
+    $categories = Product::all()->groupBy('brand');
+
+    // 2. Trả về view và đính kèm biến $categories theo
+    return view('client.index', compact('categories'));
+})->name('shop.index');
 });

@@ -1,0 +1,2 @@
+<a href="<?php echo e(route('login')); ?>">Đăng nhập</a>
+<a href="<?php echo e(route('register')); ?>">Đăng ký</a><?php /**PATH C:\xampp\htdocs\9-1-2\Nhom4_CongNgheMoi\resources\views/auth/landing.blade.php ENDPATH**/ ?>
